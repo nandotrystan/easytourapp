@@ -721,11 +721,11 @@ const TourDetailScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#aca6a6ff",
   },
   card: {
     margin: 16,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#000000ff",
     borderRadius: 16,
     elevation: 8,
     shadowColor: "#000",
@@ -871,10 +871,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#22c55e",
+    borderColor: "#3e16cfff",
   },
   alreadyReviewedText: {
-    color: "#22c55e",
+    color: "#1a17c9ff",
     fontSize: 14,
     fontWeight: "600",
   },
@@ -1030,7 +1030,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   total: {
-    backgroundColor: "#22c55e",
+    backgroundColor: "#460b92ff",
     padding: 20,
     borderRadius: 16,
     marginBottom: 24,
@@ -1038,7 +1038,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     elevation: 4,
-    shadowColor: "#22c55e",
+    shadowColor: "#07086eff",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -1061,7 +1061,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   disabledButton: {
-    backgroundColor: "#94a3b8",
+    backgroundColor: "#021227ff",
   },
   buttonContent: {
     height: 52,

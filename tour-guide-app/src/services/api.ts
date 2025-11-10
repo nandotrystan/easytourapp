@@ -834,31 +834,364 @@ export const api = {
   },
 
   // ===== ESTABELECIMENTOS =====
-  getBusinesses: async (): Promise<Business[]> => {
+  getBusinesses: async (filters?: {
+    type?: string;
+    verified?: boolean;
+    search?: string;
+    minRating?: number;
+  }): Promise<Business[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/businesses`);
+      let url = `${API_BASE_URL}/businesses`;
+      
+      // Adicionar filtros à URL se existirem
+      if (filters && Object.keys(filters).length > 0) {
+        const params = new URLSearchParams();
+        
+        if (filters.type && filters.type !== 'all') {
+          params.append('type', filters.type);
+        }
+        if (filters.verified !== undefined) {
+          params.append('verified', filters.verified.toString());
+        }
+        if (filters.search) {
+          params.append('search', filters.search);
+        }
+        if (filters.minRating !== undefined) {
+          params.append('minRating', filters.minRating.toString());
+        }
+        
+        if (params.toString()) {
+          url += `?${params.toString()}`;
+        }
+      }
+
+      console.log('🌐 Buscando estabelecimentos:', url);
+
+      const response = await fetch(url);
 
       if (!response.ok) {
-        throw new Error("Erro ao carregar estabelecimentos");
+        throw new Error('Erro ao carregar estabelecimentos');
       }
 
       const data = await response.json();
 
-      return data.map((business: any) => ({
+      if (!data.success) {
+        throw new Error(data.message || 'Erro na resposta da API');
+      }
+
+      // Mapear os dados da API para o formato do frontend
+      return data.data.map((business: any) => ({
         id: business.id.toString(),
         name: business.name,
         type: business.type,
         description: business.description,
         address: business.address,
+        phone: business.phone || null,
         rating: parseFloat(business.rating),
-        image:
-          business.image_url ||
-          "https://via.placeholder.com/300x200?text=Estabelecimento",
-        phone: business.phone || undefined,
+        image_url: business.image_url || 'https://via.placeholder.com/300x200/6200ee/ffffff?text=Estabelecimento',
+        is_verified: business.is_verified || false,
         website: business.website || undefined,
+        created_at: business.created_at,
+        updated_at: business.updated_at,
       }));
     } catch (error) {
-      console.error("Get businesses error:", error);
+      console.error('Get businesses error:', error);
+      throw error;
+    }
+  },
+
+  getBusinessById: async (id: string): Promise<Business> => {
+    try {
+      console.log('🌐 Buscando estabelecimento por ID:', id);
+
+      const response = await fetch(`${API_BASE_URL}/businesses/${id}`);
+
+      if (!response.ok) {
+        throw new Error('Estabelecimento não encontrado');
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || 'Erro na resposta da API');
+      }
+
+      const business = data.data;
+
+      return {
+        id: business.id.toString(),
+        name: business.name,
+        type: business.type,
+        description: business.description,
+        address: business.address,
+        phone: business.phone || null,
+        rating: parseFloat(business.rating),
+        image_url: business.image_url || 'https://via.placeholder.com/300x200/6200ee/ffffff?text=Estabelecimento',
+        is_verified: business.is_verified || false,
+        website: business.website || undefined,
+        created_at: business.created_at,
+        updated_at: business.updated_at,
+      };
+    } catch (error) {
+      console.error('Get business by ID error:', error);
+      throw error;
+    }
+  },
+
+  getBusinessesByType: async (type: string): Promise<Business[]> => {
+    try {
+      console.log('🌐 Buscando estabelecimentos por tipo:', type);
+
+      const response = await fetch(`${API_BASE_URL}/businesses/type/${type}`);
+
+      if (!response.ok) {
+        throw new Error('Erro ao carregar estabelecimentos por tipo');
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || 'Erro na resposta da API');
+      }
+
+      return data.data.map((business: any) => ({
+        id: business.id.toString(),
+        name: business.name,
+        type: business.type,
+        description: business.description,
+        address: business.address,
+        phone: business.phone || null,
+        rating: parseFloat(business.rating),
+        image_url: business.image_url || 'https://via.placeholder.com/300x200/6200ee/ffffff?text=Estabelecimento',
+        is_verified: business.is_verified || false,
+        website: business.website || undefined,
+        created_at: business.created_at,
+        updated_at: business.updated_at,
+      }));
+    } catch (error) {
+      console.error('Get businesses by type error:', error);
+      throw error;
+    }
+  },
+
+  getVerifiedBusinesses: async (): Promise<Business[]> => {
+    try {
+      console.log('🌐 Buscando estabelecimentos verificados');
+
+      const response = await fetch(`${API_BASE_URL}/businesses/verified`);
+
+      if (!response.ok) {
+        throw new Error('Erro ao carregar estabelecimentos verificados');
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || 'Erro na resposta da API');
+      }
+
+      return data.data.map((business: any) => ({
+        id: business.id.toString(),
+        name: business.name,
+        type: business.type,
+        description: business.description,
+        address: business.address,
+        phone: business.phone || null,
+        rating: parseFloat(business.rating),
+        image_url: business.image_url || 'https://via.placeholder.com/300x200/6200ee/ffffff?text=Estabelecimento',
+        is_verified: business.is_verified || false,
+        website: business.website || undefined,
+        created_at: business.created_at,
+        updated_at: business.updated_at,
+      }));
+    } catch (error) {
+      console.error('Get verified businesses error:', error);
+      throw error;
+    }
+  },
+
+  searchBusinesses: async (searchTerm: string): Promise<Business[]> => {
+    try {
+      console.log('🌐 Buscando estabelecimentos com termo:', searchTerm);
+
+      const response = await fetch(`${API_BASE_URL}/businesses/search?q=${encodeURIComponent(searchTerm)}`);
+
+      if (!response.ok) {
+        throw new Error('Erro ao buscar estabelecimentos');
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || 'Erro na resposta da API');
+      }
+
+      return data.data.map((business: any) => ({
+        id: business.id.toString(),
+        name: business.name,
+        type: business.type,
+        description: business.description,
+        address: business.address,
+        phone: business.phone || null,
+        rating: parseFloat(business.rating),
+        image_url: business.image_url || 'https://via.placeholder.com/300x200/6200ee/ffffff?text=Estabelecimento',
+        is_verified: business.is_verified || false,
+        website: business.website || undefined,
+        created_at: business.created_at,
+        updated_at: business.updated_at,
+      }));
+    } catch (error) {
+      console.error('Search businesses error:', error);
+      throw error;
+    }
+  },
+
+  createBusiness: async (
+    businessData: {
+      name: string;
+      type: string;
+      description: string;
+      address: string;
+      phone?: string | null;
+      rating: number;
+      image_url: string;
+      is_verified: boolean;
+    },
+    token: string
+  ): Promise<{ message: string; business: Business }> => {
+    try {
+      console.log('🌐 Criando estabelecimento:', businessData);
+
+      const response = await fetch(`${API_BASE_URL}/businesses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(businessData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao criar estabelecimento');
+      }
+
+      if (!data.success) {
+        throw new Error(data.message || 'Erro na resposta da API');
+      }
+
+      return {
+        message: data.message,
+        business: {
+          id: data.data.id.toString(),
+          name: data.data.name,
+          type: data.data.type,
+          description: data.data.description,
+          address: data.data.address,
+          phone: data.data.phone || null,
+          rating: parseFloat(data.data.rating),
+          image_url: data.data.image_url || 'https://via.placeholder.com/300x200/6200ee/ffffff?text=Estabelecimento',
+          is_verified: data.data.is_verified || false,
+          website: data.data.website || undefined,
+          created_at: data.data.created_at,
+          updated_at: data.data.updated_at,
+        },
+      };
+    } catch (error) {
+      console.error('Create business error:', error);
+      throw error;
+    }
+  },
+
+  updateBusiness: async (
+    id: string,
+    businessData: {
+      name?: string;
+      type?: string;
+      description?: string;
+      address?: string;
+      phone?: string | null;
+      rating?: number;
+      image_url?: string;
+      is_verified?: boolean;
+    },
+    token: string
+  ): Promise<{ message: string; business: Business }> => {
+    try {
+      console.log('🌐 Atualizando estabelecimento:', id, businessData);
+
+      const response = await fetch(`${API_BASE_URL}/businesses/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(businessData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao atualizar estabelecimento');
+      }
+
+      if (!data.success) {
+        throw new Error(data.message || 'Erro na resposta da API');
+      }
+
+      return {
+        message: data.message,
+        business: {
+          id: data.data.id.toString(),
+          name: data.data.name,
+          type: data.data.type,
+          description: data.data.description,
+          address: data.data.address,
+          phone: data.data.phone || null,
+          rating: parseFloat(data.data.rating),
+          image_url: data.data.image_url || 'https://via.placeholder.com/300x200/6200ee/ffffff?text=Estabelecimento',
+          is_verified: data.data.is_verified || false,
+          website: data.data.website || undefined,
+          created_at: data.data.created_at,
+          updated_at: data.data.updated_at,
+        },
+      };
+    } catch (error) {
+      console.error('Update business error:', error);
+      throw error;
+    }
+  },
+
+  deleteBusiness: async (
+    id: string,
+    token: string
+  ): Promise<{ message: string }> => {
+    try {
+      console.log('🌐 Deletando estabelecimento:', id);
+
+      const response = await fetch(`${API_BASE_URL}/businesses/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao deletar estabelecimento');
+      }
+
+      if (!data.success) {
+        throw new Error(data.message || 'Erro na resposta da API');
+      }
+
+      return {
+        message: data.message,
+      };
+    } catch (error) {
+      console.error('Delete business error:', error);
       throw error;
     }
   },

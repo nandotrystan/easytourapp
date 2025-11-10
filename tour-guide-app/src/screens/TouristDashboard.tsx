@@ -494,7 +494,7 @@ const TouristDashboard: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#a18d8dff",
   },
   loadingContainer: {
     flex: 1,
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
   },
   requestSubtitle: {
     fontSize: 12,
-    color: "#666",
+    color: "#aca6a6ff",
     marginTop: 2,
   },
   statusChip: {
@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontWeight: "bold",
-    color: "#333",
+    color: "#fdfdfdff",
   },
   divider: {
     marginVertical: 12,

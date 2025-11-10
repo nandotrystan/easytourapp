@@ -9,6 +9,7 @@ import tourRequestRoutes from './routes/tourRequest';
 import notificationRoutes from './routes/notification';
 import tourReviewRoutes from './routes/tourReview';
 import guideReviewRoutes from './routes/guideReview';
+import BusinessRoutes from './routes/business';
 
 
 
@@ -55,6 +56,7 @@ app.use('/api/tour-requests', tourRequestRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/tour-reviews', tourReviewRoutes);
 app.use('/api/guide-reviews', guideReviewRoutes);
+app.use('/api/businesses', BusinessRoutes);
 
 // Business routes (simplificadas)
 app.get('/api/businesses', async (req: Request, res: Response) => {

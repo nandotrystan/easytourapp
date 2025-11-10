@@ -363,7 +363,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#000000ff',
   },
   contentContainer: {
     flexGrow: 1,
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#3d3b3bff',
     textAlign: 'center',
   },
   input: {

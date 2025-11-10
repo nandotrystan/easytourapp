@@ -1,46 +1,37 @@
-import React, { useState, useEffect, JSX } from 'react';
-import { View, StyleSheet, FlatList, ScrollView, Linking } from 'react-native';
-import { Card, Title, Paragraph, Chip, Searchbar, Button, Text, ActivityIndicator } from 'react-native-paper';
-import { Business } from '../types';
+// screens/BusinessScreen.tsx
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  View, 
+  StyleSheet, 
+  FlatList, 
+  Linking, 
+  Alert,
+  RefreshControl 
+} from 'react-native';
+import { 
+  Card, 
+  Title, 
+  Paragraph, 
+  Chip, 
+  Searchbar, 
+  Button, 
+  Text, 
+  ActivityIndicator,
+  Snackbar 
+} from 'react-native-paper';
+import { Business, BusinessFilters } from '../types';
 import { api } from '../services/api';
 
-const BusinessScreen: React.FC = () => { // ← Remove as props
+const BusinessScreen: React.FC = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [snackbarVisible, setSnackbarVisible] = useState<boolean>(false);
 
-  useEffect(() => {
-    loadBusinesses();
-  }, []);
-
-  const loadBusinesses = async (): Promise<void> => {
-    try {
-      setIsLoading(true);
-      const data = await api.getBusinesses();
-      setBusinesses(data);
-    } catch (error) {
-      console.error('Erro ao carregar estabelecimentos:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const onRefresh = async (): Promise<void> => {
-    setRefreshing(true);
-    await loadBusinesses();
-    setRefreshing(false);
-  };
-
-  const filteredBusinesses = businesses.filter(business => {
-    const matchesSearch = business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         business.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         business.address.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = selectedType === 'all' || business.type === selectedType;
-    return matchesSearch && matchesType;
-  });
-
+  // Tipos de negócio disponíveis
   const businessTypes = [
     { id: 'all', label: 'Todos', icon: 'store' },
     { id: 'restaurant', label: 'Restaurantes', icon: 'silverware-fork-knife' },
@@ -49,87 +40,177 @@ const BusinessScreen: React.FC = () => { // ← Remove as props
     { id: 'attraction', label: 'Atrações', icon: 'camera' },
   ];
 
+  // Carregar estabelecimentos
+  const loadBusinesses = useCallback(async (filters?: BusinessFilters) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      console.log('📥 Carregando estabelecimentos com filtros:', filters);
+      
+      const data = await api.getBusinesses(filters);
+      console.log('✅ Estabelecimentos carregados:', data.length);
+      
+      setBusinesses(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar estabelecimentos';
+      setError(errorMessage);
+      setSnackbarVisible(true);
+      console.error('❌ Erro ao carregar estabelecimentos:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Carregar dados iniciais
+  useEffect(() => {
+    loadBusinesses();
+  }, [loadBusinesses]);
+
+  // Atualizar quando o tipo mudar
+  useEffect(() => {
+    const filters: BusinessFilters = {};
+    
+    if (selectedType !== 'all') {
+      filters.type = selectedType;
+    }
+    
+    if (searchQuery) {
+      filters.search = searchQuery;
+    }
+    
+    loadBusinesses(filters);
+  }, [selectedType, loadBusinesses]);
+
+  // Refresh manual
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadBusinesses();
+    setRefreshing(false);
+  }, [loadBusinesses]);
+
+  // Buscar estabelecimentos
+  const handleSearch = useCallback(() => {
+    const filters: BusinessFilters = {};
+    
+    if (selectedType !== 'all') {
+      filters.type = selectedType;
+    }
+    
+    if (searchQuery) {
+      filters.search = searchQuery;
+    }
+    
+    loadBusinesses(filters);
+  }, [selectedType, searchQuery, loadBusinesses]);
+
+  // Limpar filtros
+  const clearFilters = useCallback(() => {
+    setSearchQuery('');
+    setSelectedType('all');
+    loadBusinesses();
+  }, [loadBusinesses]);
+
+  // Funções de utilidade
   const getTypeIcon = (type: string): string => {
     const typeConfig = businessTypes.find(t => t.id === type);
     return typeConfig?.icon || 'store';
   };
 
   const getTypeColor = (type: string): string => {
-    switch (type) {
-      case 'restaurant': return '#E91E63';
-      case 'store': return '#2196F3';
-      case 'hotel': return '#4CAF50';
-      case 'attraction': return '#FF9800';
-      default: return '#9C27B0';
-    }
+    const colors: { [key: string]: string } = {
+      restaurant: '#E91E63',
+      store: '#2196F3',
+      hotel: '#4CAF50',
+      attraction: '#FF9800',
+    };
+    return colors[type] || '#9C27B0';
   };
 
   const getTypeLabel = (type: string): string => {
-    switch (type) {
-      case 'restaurant': return 'Restaurante';
-      case 'store': return 'Loja';
-      case 'hotel': return 'Hotel';
-      case 'attraction': return 'Atração';
-      default: return type;
-    }
+    const labels: { [key: string]: string } = {
+      restaurant: 'Restaurante',
+      store: 'Loja',
+      hotel: 'Hotel',
+      attraction: 'Atração',
+    };
+    return labels[type] || type;
   };
 
-  const handleCall = (phone?: string): void => {
+  // Ações
+  const handleCall = (phone: string | null): void => {
     if (phone) {
-      Linking.openURL(`tel:${phone}`);
+      Linking.openURL(`tel:${phone}`).catch(() => {
+        Alert.alert('Erro', 'Não foi possível abrir o aplicativo de telefone');
+      });
+    } else {
+      Alert.alert('Info', 'Número de telefone não disponível');
     }
   };
 
   const handleOpenMaps = (address: string): void => {
     const encodedAddress = encodeURIComponent(address);
-    Linking.openURL(`https://maps.google.com/?q=${encodedAddress}`);
+    Linking.openURL(`https://maps.google.com/?q=${encodedAddress}`).catch(() => {
+      Alert.alert('Erro', 'Não foi possível abrir o aplicativo de mapas');
+    });
   };
 
-  const handleOpenWebsite = (website?: string): void => {
-    if (website) {
-      Linking.openURL(website);
-    }
-  };
-
-  const renderRatingStars = (rating: number): JSX.Element => {
+  const renderRatingStars = (rating: number) => {
     const stars = [];
     const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
-    for (let i = 0; i < fullStars; i++) {
-      stars.push('⭐');
-    }
     
-    if (hasHalfStar) {
-      stars.push('⭐');
+    for (let i = 0; i < 5; i++) {
+      if (i < fullStars) {
+        stars.push('⭐');
+      } else {
+        stars.push('☆');
+      }
     }
     
     return (
       <View style={styles.ratingContainer}>
         <Text style={styles.ratingText}>{stars.join('')}</Text>
-        <Text style={styles.ratingNumber}>({rating})</Text>
+        <Text style={styles.ratingNumber}>({rating.toFixed(1)})</Text>
       </View>
     );
   };
 
+  // Componente de item da lista
   const renderBusinessItem = ({ item }: { item: Business }) => (
-    <Card style={styles.card} mode="elevated" elevation={3}>
+    <Card style={styles.card} mode="elevated">
       <Card.Cover 
-        source={{ uri: item.image || 'https://via.placeholder.com/300x200?text=Estabelecimento' }} 
+        source={{ 
+          uri: item.image_url || 'https://via.placeholder.com/300x200/6200ee/ffffff?text=Estabelecimento'
+        }} 
         style={styles.cardImage}
+        resizeMode="cover"
       />
       <Card.Content style={styles.cardContent}>
         <View style={styles.businessHeader}>
           <View style={styles.titleContainer}>
-            <Title style={styles.businessTitle} numberOfLines={2}>{item.name}</Title>
-            <Chip 
-              icon={getTypeIcon(item.type)}
-              style={[styles.typeChip, { backgroundColor: getTypeColor(item.type) }]}
-              textStyle={styles.typeChipText}
-              compact
-            >
-              {getTypeLabel(item.type)}
-            </Chip>
+            <Title style={styles.businessTitle} numberOfLines={2}>
+              {item.name}
+            </Title>
+            <View style={styles.chipContainer}>
+              <Chip 
+                icon={getTypeIcon(item.type)}
+                style={[styles.typeChip, { backgroundColor: getTypeColor(item.type) }]}
+                textStyle={styles.typeChipText}
+                compact
+              >
+                {getTypeLabel(item.type)}
+              </Chip>
+              {item.is_verified && (
+                <Chip 
+                  icon="check-circle"
+                  style={styles.verifiedChip}
+                  textStyle={styles.verifiedChipText}
+                  compact
+                >
+                  Verificado
+                </Chip>
+              )}
+            </View>
           </View>
           {renderRatingStars(item.rating)}
         </View>
@@ -169,7 +250,7 @@ const BusinessScreen: React.FC = () => { // ← Remove as props
           
           {item.phone && (
             <Button 
-              mode="outlined" 
+              mode="contained" 
               style={styles.actionButton}
               icon="phone"
               onPress={() => handleCall(item.phone)}
@@ -178,23 +259,12 @@ const BusinessScreen: React.FC = () => { // ← Remove as props
               Ligar
             </Button>
           )}
-          
-          {item.website && (
-            <Button 
-              mode="outlined" 
-              style={styles.actionButton}
-              icon="web"
-              onPress={() => handleOpenWebsite(item.website)}
-              compact
-            >
-              Site
-            </Button>
-          )}
         </View>
       </Card.Content>
     </Card>
   );
 
+  // Componente de filtro
   const renderFilterChip = ({ item }: { item: typeof businessTypes[0] }) => (
     <Chip
       selected={selectedType === item.id}
@@ -211,7 +281,8 @@ const BusinessScreen: React.FC = () => { // ← Remove as props
     </Chip>
   );
 
-  if (isLoading) {
+  // Loading state
+  if (isLoading && !refreshing && businesses.length === 0) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#6200ee" />
@@ -233,13 +304,25 @@ const BusinessScreen: React.FC = () => { // ← Remove as props
       </Card>
 
       {/* Barra de Pesquisa */}
-      <Searchbar
-        placeholder="Buscar estabelecimentos..."
-        onChangeText={setSearchQuery}
-        value={searchQuery}
-        style={styles.search}
-        icon="magnify"
-      />
+      <View style={styles.searchContainer}>
+        <Searchbar
+          placeholder="Buscar estabelecimentos..."
+          onChangeText={setSearchQuery}
+          value={searchQuery}
+          style={styles.search}
+          icon="magnify"
+          onSubmitEditing={handleSearch}
+          returnKeyType="search"
+        />
+        {/* <Button 
+          mode="contained" 
+          onPress={handleSearch}
+          style={styles.searchButton}
+          icon="magnify"
+        >
+        "Buscar"
+        </Button> */}
+      </View>
 
       {/* Filtros por Tipo */}
       <Card style={styles.filtersCard}>
@@ -259,48 +342,65 @@ const BusinessScreen: React.FC = () => { // ← Remove as props
       {/* Contador de Resultados */}
       <View style={styles.resultsInfo}>
         <Text style={styles.resultsText}>
-          {filteredBusinesses.length} estabelecimento(s) encontrado(s)
+          {businesses.length} estabelecimento(s) encontrado(s)
           {selectedType !== 'all' && ` em ${businessTypes.find(t => t.id === selectedType)?.label?.toLowerCase()}`}
           {searchQuery && ` para "${searchQuery}"`}
         </Text>
       </View>
 
       {/* Lista de Estabelecimentos */}
-      {filteredBusinesses.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <Card.Content style={styles.emptyContent}>
-            <Text style={styles.emptyIcon}>🏪</Text>
-            <Title style={styles.emptyTitle}>Nenhum estabelecimento encontrado</Title>
-            <Paragraph style={styles.emptyText}>
-              {searchQuery || selectedType !== 'all' 
-                ? 'Tente ajustar os filtros ou termos da pesquisa'
-                : 'Nenhum estabelecimento cadastrado no momento'
-              }
-            </Paragraph>
-            <Button 
-              mode="outlined" 
-              onPress={() => {
-                setSearchQuery('');
-                setSelectedType('all');
-              }}
-              style={styles.emptyButton}
-              icon="filter-remove"
-            >
-              Limpar Filtros
-            </Button>
-          </Card.Content>
-        </Card>
-      ) : (
-        <FlatList
-          data={filteredBusinesses}
-          renderItem={renderBusinessItem}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-        />
-      )}
+      <FlatList
+        data={businesses}
+        renderItem={renderBusinessItem}
+        keyExtractor={item => item.id.toString()}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#6200ee']}
+            tintColor="#6200ee"
+          />
+        }
+        ListEmptyComponent={
+          !isLoading ? (
+            <Card style={styles.emptyCard}>
+              <Card.Content style={styles.emptyContent}>
+                <Text style={styles.emptyIcon}>🏪</Text>
+                <Title style={styles.emptyTitle}>Nenhum estabelecimento encontrado</Title>
+                <Paragraph style={styles.emptyText}>
+                  {searchQuery || selectedType !== 'all' 
+                    ? 'Tente ajustar os filtros ou termos da pesquisa'
+                    : 'Nenhum estabelecimento cadastrado no momento'
+                  }
+                </Paragraph>
+                <Button 
+                  mode="outlined" 
+                  onPress={clearFilters}
+                  style={styles.emptyButton}
+                  icon="filter-remove"
+                >
+                  Limpar Filtros
+                </Button>
+              </Card.Content>
+            </Card>
+          ) : null
+        }
+      />
+
+      {/* Snackbar para erros */}
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+        action={{
+          label: 'Tentar Novamente',
+          onPress: () => loadBusinesses(),
+        }}
+      >
+        {error || 'Erro ao carregar dados'}
+      </Snackbar>
     </View>
   );
 };
@@ -308,7 +408,7 @@ const BusinessScreen: React.FC = () => { // ← Remove as props
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
+    padding: 16,
     backgroundColor: '#f5f5f5',
   },
   loadingContainer: {
@@ -323,7 +423,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   headerCard: {
-    marginBottom: 15,
+    marginBottom: 6,
     backgroundColor: '#6200ee',
     elevation: 4,
   },
@@ -337,22 +437,30 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     fontSize: 14,
   },
+  searchContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    gap: 12,
+  },
   search: {
-    marginBottom: 15,
+    flex: 1,
+    elevation: 2,
+  },
+  searchButton: {
     elevation: 2,
   },
   filtersCard: {
-    marginBottom: 15,
+    marginBottom: 16,
     elevation: 2,
   },
   filtersTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 12,
     color: '#333',
   },
   filtersList: {
-    paddingVertical: 5,
+    paddingVertical: 4,
   },
   filterChip: {
     marginRight: 8,
@@ -361,8 +469,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#6200ee',
   },
   resultsInfo: {
-    marginBottom: 15,
-    paddingHorizontal: 5,
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
   resultsText: {
     fontSize: 14,
@@ -371,9 +479,10 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingBottom: 20,
+    flexGrow: 1,
   },
   card: {
-    marginBottom: 15,
+    marginBottom: 16,
     elevation: 2,
     borderRadius: 12,
     overflow: 'hidden',
@@ -382,32 +491,45 @@ const styles = StyleSheet.create({
     height: 160,
   },
   cardContent: {
-    paddingVertical: 12,
+    paddingVertical: 16,
     paddingHorizontal: 16,
   },
   businessHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   titleContainer: {
     flex: 1,
-    marginRight: 10,
+    marginRight: 12,
   },
   businessTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 6,
-    lineHeight: 22,
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
   },
   typeChip: {
-    alignSelf: 'flex-start',
-    height: 24,
+    height: 28,
   },
   typeChipText: {
     color: 'white',
-    fontSize: 10,
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  verifiedChip: {
+    height: 28,
+    backgroundColor: '#4CAF50',
+  },
+  verifiedChipText: {
+    color: 'white',
+    fontSize: 12,
     fontWeight: 'bold',
   },
   ratingContainer: {
@@ -416,7 +538,7 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     fontSize: 14,
-    marginRight: 4,
+    marginRight: 6,
   },
   ratingNumber: {
     fontSize: 12,
@@ -426,66 +548,65 @@ const styles = StyleSheet.create({
   businessDescription: {
     marginBottom: 12,
     lineHeight: 20,
-    color: '#555',
+    color: '#aca6a6ff',
     fontSize: 14,
   },
   businessDetails: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   detailIcon: {
     marginRight: 8,
-    fontSize: 14,
+    fontSize: 16,
+    marginTop: 2,
   },
   detailText: {
     flex: 1,
-    fontSize: 13,
-    color: '#666',
-    lineHeight: 18,
+    fontSize: 14,
+    color: '#aca6a6ff',
+    lineHeight: 20,
   },
   actionButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 8,
+    justifyContent: 'flex-start',
+    gap: 12,
   },
   actionButton: {
-    flex: 1,
-    minWidth: 80,
-    marginHorizontal: 2,
+    minWidth: 100,
   },
   emptyCard: {
-    marginTop: 50,
+    marginTop: 40,
     alignItems: 'center',
     elevation: 2,
     borderRadius: 12,
   },
   emptyContent: {
     alignItems: 'center',
-    padding: 40,
+    padding: 32,
   },
   emptyIcon: {
     fontSize: 64,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   emptyTitle: {
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
     fontSize: 18,
+    fontWeight: 'bold',
   },
   emptyText: {
     textAlign: 'center',
-    color: '#666',
+    color: '#aca6a6ff',
     marginBottom: 20,
     fontSize: 14,
     lineHeight: 20,
   },
   emptyButton: {
-    marginTop: 10,
+    marginTop: 8,
   },
 });
 

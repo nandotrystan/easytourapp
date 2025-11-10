@@ -72,19 +72,56 @@ export interface CreateTourRequestData {
   special_requests?: string;
 }
 
+// types/index.ts
 export interface Business {
-  id: string;
+  id: number;
   name: string;
-  type: 'restaurant' | 'store' | 'hotel' | 'attraction';
+  type: string;
   description: string;
   address: string;
+  phone: string | null;
   rating: number;
-  image: string;
-  phone?: string;
+  image_url: string;
+  is_verified: boolean;
   website?: string;
-  email?: string;
-  opening_hours?: string;
-  price_range?: '$' | '$$' | '$$$' | '$$$$';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  error?: string;
+}
+
+export interface BusinessFilters {
+  type?: string;
+  verified?: boolean;
+  search?: string;
+  minRating?: number;
+}
+
+export interface BusinessCreateData {
+  name: string;
+  type: string;
+  description: string;
+  address: string;
+  phone?: string | null;
+  rating: number;
+  image_url: string;
+  is_verified: boolean;
+}
+
+export interface BusinessUpdateData {
+  name?: string;
+  type?: string;
+  description?: string;
+  address?: string;
+  phone?: string | null;
+  rating?: number;
+  image_url?: string;
+  is_verified?: boolean;
 }
 
 export interface Review {

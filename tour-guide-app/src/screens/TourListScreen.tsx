@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 10,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#a18d8dff",
   },
   loadingContainer: {
     flex: 1,
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: '#aca6a6ff',
   },
   errorContainer: {
     flex: 1,
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   },
   resultsText: {
     fontSize: 14,
-    color: '#666',
+    color: '#fcfbfbff',
     fontStyle: 'italic',
   },
   list: {
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   tourDescription: {
     marginBottom: 12,
     lineHeight: 20,
-    color: '#555',
+    color: '#aca6a6ff',
     fontSize: 14,
   },
   tourDetails: {
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 13,
-    color: '#666',
+    color: '#aca6a6ff',
   },
   priceContainer: {
     backgroundColor: '#f8f9fa',

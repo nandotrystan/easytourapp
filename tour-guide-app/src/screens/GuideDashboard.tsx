@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
   },
   requestSubtitle: {
     fontSize: 12,
-    color: "#666",
+    color: "#aca6a6ff",
     marginTop: 2,
   },
   statusChip: {
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   tourDescription: {
-    color: "#666",
+    color: "#aca6a6ff",
     marginVertical: 8,
     lineHeight: 20,
   },
@@ -784,7 +784,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: "#666",
+    color: "#aca6a6ff",
     marginTop: 4,
   },
   pending: {
